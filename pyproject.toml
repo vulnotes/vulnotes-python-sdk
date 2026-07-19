@@ -1,0 +1,53 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "vulnotes"
+description = "Official Python SDK for the Vulnotes API"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Vulnotes" }]
+requires-python = ">=3.9"
+dependencies = ["requests>=2.28"]
+dynamic = ["version"]
+keywords = ["vulnotes", "pentest", "vulnerability", "reporting", "api", "sdk"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[project.urls]
+Homepage = "https://vulnotes.com"
+Documentation = "https://docs.vulnotes.com"
+Repository = "https://github.com/vulnotes/vulnotes-python-sdk"
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "ruff>=0.4"]
+
+[tool.hatch.version]
+path = "src/vulnotes/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vulnotes"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
