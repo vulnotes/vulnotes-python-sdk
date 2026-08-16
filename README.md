@@ -33,7 +33,7 @@ Methods return plain dicts and lists matching the API's JSON. File exports retur
 
 ## What's covered
 
-Everything reachable with an API key: reports and findings, companies, the vulnerability library, vulnerability templates, report templates, snapshots and review comments, notes, image/attachment uploads, exports (PDF, DOCX, XLSX, ZIP, JSON), the planning calendar, and the AI endpoints. Full endpoint reference: [docs.vulnotes.com](https://docs.vulnotes.com).
+Everything reachable with an API key: reports and findings, companies, the vulnerability library, vulnerability templates, report templates, snapshots and review comments, notes, image/attachment uploads, exports (PDF, DOCX, XLSX, ZIP, JSON), the planning calendar, and the AI endpoints. Full SDK reference: [docs.vulnotes.com/api/python-sdk](https://docs.vulnotes.com/api/python-sdk).
 
 Anything not wrapped yet can still be called directly:
 
