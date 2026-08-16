@@ -95,21 +95,3 @@ except NotFoundError:
 A key that lacks the permission an endpoint needs gets a `PermissionDeniedError` naming it. Reports outside the owner's visibility raise `NotFoundError`, not 403; that's intentional on the server side.
 
 Idempotent requests are retried automatically on connection errors and 429/502/503/504. Tune with `max_retries`, `timeout` and `verify_ssl` on the client.
-
-## Development
-
-```bash
-pip install -e ".[dev]"
-pytest          # offline, no instance needed
-ruff check .
-```
-
-There's also an integration suite that runs against a real instance. It creates its own fixtures and removes them, but point it at a disposable instance anyway:
-
-```bash
-VULNOTES_TEST_URL=https://dev.example VULNOTES_TEST_API_KEY=vuln_sk_... pytest tests/integration
-```
-
-## License
-
-MIT
