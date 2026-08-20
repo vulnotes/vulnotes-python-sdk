@@ -15,14 +15,23 @@ DateLike = Union[str, _dt.date, _dt.datetime]
 
 
 class Reports(Resource):
-    def list(self, *, page: int | None = None, limit: int | None = None) -> JSON:
+    def list(
+        self,
+        *,
+        page: int | None = None,
+        limit: int | None = None,
+        status: str | None = None,
+        search: str | None = None,
+    ) -> JSON:
         """List reports (plain list, or paginated envelope with ``page``/``limit``).
 
         Visibility: if the key owner's team uses contributors-only report
         visibility, only reports they created, contribute to, or review are
         returned.
         """
-        return self._client.get("/reports", params=page_params(page, limit))
+        params = page_params(page, limit)
+        params.update(omit_none({"status": status, "search": search}))
+        return self._client.get("/reports", params=params)
 
     def iter(self, *, limit: int = 100) -> Iterator[dict[str, Any]]:
         """Iterate over every visible report, fetching pages lazily."""
@@ -34,6 +43,16 @@ class Reports(Resource):
     def get(self, report_id: str) -> dict[str, Any]:
         return self._client.get(f"/reports/{report_id}")
 
+    def dashboard_stats(self) -> dict[str, Any]:
+        """Get report/client/finding counts and dashboard report summaries."""
+        return self._client.get("/reports/dashboard/stats")
+
+    def recent_activities(self, *, limit: int = 10) -> builtins.list[dict[str, Any]]:
+        """Get the most recent report activity records (maximum 50)."""
+        if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 50:
+            raise ValueError("limit must be an integer between 1 and 50")
+        return self._client.get("/reports/dashboard/activities", params={"limit": limit})
+
     def create(
         self,
         title: str,
@@ -41,6 +60,7 @@ class Reports(Resource):
         company: str | None = None,
         template: str | None = None,
         vuln_template: str | None = None,
+        vuln_templates: builtins.list[str] | None = None,
         language: str | None = None,
         start_date: DateLike | None = None,
         end_date: DateLike | None = None,
@@ -71,6 +91,7 @@ class Reports(Resource):
                 "company": company,
                 "template": template,
                 "vulnTemplate": vuln_template,
+                "vulnTemplates": vuln_templates,
                 "language": language,
                 "startDate": iso(start_date),
                 "endDate": iso(end_date),
@@ -93,6 +114,7 @@ class Reports(Resource):
         template: str | None = None,
         remove_template: bool | None = None,
         vulnerability_template: str | None = None,
+        vulnerability_templates: builtins.list[str] | None = None,
         remove_vulnerability_template: bool | None = None,
         language: str | None = None,
         start_date: DateLike | None = None,
@@ -117,6 +139,7 @@ class Reports(Resource):
                 "template": template,
                 "removeTemplate": remove_template,
                 "vulnerabilityTemplate": vulnerability_template,
+                "vulnerabilityTemplates": vulnerability_templates,
                 "removeVulnerabilityTemplate": remove_vulnerability_template,
                 "language": language,
                 "startDate": iso(start_date),
@@ -137,6 +160,22 @@ class Reports(Resource):
         """Re-sync every report built from the given template with its latest content."""
         return self._client.post(f"/reports/sync-from-template/{template_id}")
 
+    def update_content_section(
+        self,
+        report_id: str,
+        section_key: str,
+        *,
+        content: str | None = None,
+        is_complete: bool | None = None,
+    ) -> JSON:
+        """Atomically update one report content variable and/or completion flag."""
+        if content is None and is_complete is None:
+            raise ValueError("content or is_complete must be supplied")
+        if is_complete is not None and not isinstance(is_complete, bool):
+            raise TypeError("is_complete must be a boolean")
+        body = omit_none({"content": content, "isComplete": is_complete})
+        return self._client.put(f"/reports/{report_id}/content/{section_key}", json=body)
+
     # ── import / export ──────────────────────────────────────────────────
 
     def import_json(
@@ -154,6 +193,12 @@ class Reports(Resource):
                 the payload as ``importOptions``.
         """
         body = dict(export)
+        if body.get("exportType") != "vulnotes-report" or not isinstance(
+            body.get("report"), dict
+        ):
+            raise ValueError(
+                "export must contain exportType='vulnotes-report' and a report object"
+            )
         if import_options is not None:
             body["importOptions"] = import_options
         return self._client.post("/reports/import", json=body)

@@ -60,3 +60,21 @@ class Findings(Resource):
     def delete(self, report_id: str, finding_id: str) -> JSON:
         """Remove a finding from the report."""
         return self._client.delete(f"/reports/{report_id}/findings/{finding_id}")
+
+    def complete_retest(
+        self,
+        report_id: str,
+        finding_id: str,
+        passed: bool,
+        *,
+        comment: str | None = None,
+    ) -> dict[str, Any]:
+        """Record a pentester retest verdict and optional client-visible note."""
+        if not isinstance(passed, bool):
+            raise TypeError("passed must be a boolean")
+        body: dict[str, Any] = {"passed": passed}
+        if comment is not None:
+            body["comment"] = comment
+        return self._client.post(
+            f"/reports/{report_id}/findings/{finding_id}/retest", json=body
+        )

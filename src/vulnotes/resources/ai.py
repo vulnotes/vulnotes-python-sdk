@@ -3,6 +3,7 @@ depending on the endpoint (noted per method)."""
 
 from __future__ import annotations
 
+import json
 from collections.abc import Sequence
 from typing import Any
 
@@ -72,26 +73,34 @@ class AI(Resource):
     def generate_finding_from_images(
         self,
         report_id: str,
-        images: Sequence[FileTypes],
+        images: Sequence[FileTypes] = (),
         *,
         description: str | None = None,
-        redacted_images: str | None = None,
+        redacted_images: str | Sequence[dict[str, str]] | None = None,
         vuln_template_id: str | None = None,
         timeout: float | None = 300.0,
     ) -> dict[str, Any]:
         """Generate a finding from screenshot evidence. Requires ``rw:reports``.
 
         Args:
-            images: Screenshots (paths, bytes, file objects, or
-                ``(filename, fileobj)`` tuples).
+            images: Zero to five screenshots (paths, bytes, file objects, or
+                ``(filename, fileobj)`` tuples). A non-empty ``description``
+                is required when no image is supplied.
             description: Extra context for the generation.
             redacted_images: Redaction metadata as expected by the API.
             vuln_template_id: Vulnerability template guiding the output fields.
         """
+        if len(images) > 5:
+            raise ValueError("at most five images may be supplied")
+        if not images and not (description and description.strip()):
+            raise ValueError("description is required when no images are supplied")
+        redacted_payload = redacted_images
+        if redacted_images is not None and not isinstance(redacted_images, str):
+            redacted_payload = json.dumps(list(redacted_images))
         data = omit_none(
             {
                 "description": description,
-                "redactedImages": redacted_images,
+                "redactedImages": redacted_payload,
                 "vulnTemplateId": vuln_template_id,
             }
         )

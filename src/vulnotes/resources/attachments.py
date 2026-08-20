@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import builtins
+import os
 from typing import Any
 
-from .._utils import FileTypes, omit_none, prepare_file
+from .._utils import FileTypes, omit_none, prepare_file, write_bytes
 from ._base import JSON, Resource
 
 
@@ -73,3 +74,15 @@ class Attachments(Resource):
 
     def delete(self, attachment_id: str) -> JSON:
         return self._client.delete(f"/attachments/{attachment_id}")
+
+    def download(
+        self,
+        attachment_id: str,
+        *,
+        path: str | os.PathLike[str] | None = None,
+    ) -> bytes:
+        """Download an authorized attachment and optionally write it to ``path``."""
+        content = self._client.get(f"/attachments/{attachment_id}/download", raw=True)
+        if path is not None:
+            write_bytes(content, path)
+        return content

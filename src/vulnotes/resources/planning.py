@@ -7,10 +7,11 @@ Permissions: ``ro:planning`` to read, ``rw:planning`` to write,
 from __future__ import annotations
 
 import datetime as _dt
+import os
 from collections.abc import Iterator
 from typing import Any, Union
 
-from .._utils import iso, omit_none
+from .._utils import FileTypes, iso, omit_none, prepare_file, write_bytes
 from ._base import JSON, Resource, page_params, paginate
 
 DateLike = Union[str, _dt.date, _dt.datetime]
@@ -145,6 +146,42 @@ class Planning(Resource):
     def delete_event(self, event_id: str) -> JSON:
         """Delete a planning event. Requires ``manage:planning``."""
         return self._client.delete(f"/planning/events/{event_id}")
+
+    def upload_attachment(
+        self, event_id: str, file: FileTypes
+    ) -> dict[str, Any]:
+        """Upload an attachment to an editable planning event."""
+        prepared = prepare_file(file, default_name="attachment.bin")
+        try:
+            return self._client.post(
+                f"/planning/events/{event_id}/attachments", files={"file": prepared}
+            )
+        finally:
+            fh = prepared[1]
+            if hasattr(fh, "close"):
+                fh.close()
+
+    def download_attachment(
+        self,
+        event_id: str,
+        attachment_id: str,
+        *,
+        path: str | os.PathLike[str] | None = None,
+    ) -> bytes:
+        """Download an attachment from a visible planning event."""
+        content = self._client.get(
+            f"/planning/events/{event_id}/attachments/{attachment_id}/download",
+            raw=True,
+        )
+        if path is not None:
+            write_bytes(content, path)
+        return content
+
+    def delete_attachment(self, event_id: str, attachment_id: str) -> JSON:
+        """Delete an attachment from an editable planning event."""
+        return self._client.delete(
+            f"/planning/events/{event_id}/attachments/{attachment_id}"
+        )
 
     # ── availability ─────────────────────────────────────────────────────
 

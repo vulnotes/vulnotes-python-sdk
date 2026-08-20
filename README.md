@@ -33,7 +33,7 @@ Methods return plain dicts and lists matching the API's JSON. File exports retur
 
 ## What's covered
 
-Everything reachable with an API key: reports and findings, companies, the vulnerability library, vulnerability templates, report templates, snapshots and review comments, notes, image/attachment uploads, exports (PDF, DOCX, XLSX, ZIP, JSON), the planning calendar, and the AI endpoints. Full SDK reference: [docs.vulnotes.com/api/python-sdk](https://docs.vulnotes.com/api/python-sdk).
+Everything reachable with an operational API key: reports and findings, companies, the vulnerability library, full report-template authoring, snapshots and review comments, notes, image/attachment management, exports, the planning calendar (including event attachments), and AI-assisted authoring. This operational parity work does not expand administrative settings or client-portal namespaces. Full SDK reference: [docs.vulnotes.com/api/python-sdk](https://docs.vulnotes.com/api/python-sdk).
 
 Anything not wrapped yet can still be called directly:
 
@@ -74,6 +74,19 @@ Uploading evidence:
 ```python
 client.images.upload("screenshot.png", report_id=report_id)
 client.attachments.upload("nmap-scan.xml", report_id=report_id)
+client.attachments.download(attachment_id, path="downloaded-scan.xml")
+client.planning.upload_attachment(event_id, "scope.pdf")
+```
+
+Creating and saving a report template:
+
+```python
+template = client.templates.create("External pentest", language="en")
+client.templates.save_content(
+    template["_id"],
+    html_pages=[{"id": "cover", "html": "<h1>{{ report.title }}</h1>"}],
+    global_styles="h1 { color: #111827; }",
+)
 ```
 
 Dates can be passed as ISO strings or as `datetime.date`/`datetime.datetime`.

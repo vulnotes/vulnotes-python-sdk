@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from typing import Any
+from urllib.parse import unquote
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -34,6 +35,26 @@ from .resources.vulnerability_templates import VulnerabilityTemplates
 __all__ = ["VulnotesClient"]
 
 _RETRYABLE_METHODS = frozenset(["GET", "HEAD", "OPTIONS", "PUT", "DELETE"])
+
+
+def _validate_api_path(path: str) -> None:
+    """Reject path confusion before ``requests`` normalizes the URL.
+
+    Resource identifiers are interpolated into paths throughout the SDK. A value
+    such as ``../../settings`` must never turn an operational method into a call
+    to a different API namespace. Decode twice to also catch percent-encoded and
+    double-encoded separators/dot segments.
+    """
+    if not isinstance(path, str) or not path or any(ord(ch) < 32 for ch in path):
+        raise VulnotesError("API path must be a non-empty string without control characters")
+    decoded = path
+    for _ in range(2):
+        decoded = unquote(decoded)
+    path_only = decoded.split("?", 1)[0]
+    if "\\" in path_only or "://" in path_only or path_only.startswith("//"):
+        raise VulnotesError("Unsafe API path")
+    if any(segment in {".", ".."} for segment in path_only.split("/")):
+        raise VulnotesError("Unsafe API path")
 
 
 class VulnotesClient:
@@ -153,6 +174,7 @@ class VulnotesClient:
         unwrapped so every method returns the entity itself. Raises a subclass
         of :class:`~vulnotes.exceptions.VulnotesError` on failure.
         """
+        _validate_api_path(path)
         url = self.base_url + (path if path.startswith("/") else "/" + path)
         try:
             resp = self._session.request(
